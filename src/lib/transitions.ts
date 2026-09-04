@@ -1,6 +1,6 @@
 import { BLOCK_IDS, type BlockId, type EventState, type FloorId } from './types';
 import { RIDDLES } from './riddles';
-import { getBlockElapsed } from './time';
+import { FLOOR_COUNTDOWN_MS, getBlockElapsed } from './time';
 
 /**
  * Pure event transitions. Each takes the previous state + a single `now`
@@ -9,20 +9,28 @@ import { getBlockElapsed } from './time';
  */
 
 export function startFloor(prev: EventState, floorId: FloorId, now: number): EventState {
+  // Timers kick in when the GET SET GO intro finishes. Stamping the future
+  // GO moment up-front keeps it deterministic: every tab, refresh recovery
+  // and the intro animation all agree on t=0 with no follow-up action.
+  const readyAt = now + FLOOR_COUNTDOWN_MS;
+  const cursor = typeof prev.nextRiddleIndex === 'number' ? prev.nextRiddleIndex : 0;
+  const riddleIndex = ((cursor % RIDDLES.length) + RIDDLES.length) % RIDDLES.length;
   return {
     ...prev,
     activeFloorId: floorId,
+    nextRiddleIndex: cursor + 1,
     floors: prev.floors.map((f) =>
       f.id !== floorId
         ? f
         : {
             ...f,
-            sharedStartTimestamp: now,
+            sharedStartTimestamp: readyAt,
+            introRiddleIndex: riddleIndex,
             blocks: BLOCK_IDS.map((b) => ({
               id: b,
               status: 'RUNNING' as const,
               accumulatedMs: 0,
-              runStartStamp: now,
+              runStartStamp: readyAt,
               pauseStamp: null,
             })),
           },
@@ -198,10 +206,11 @@ export function resetFloor(prev: EventState, floorId: FloorId): EventState {
     floors: prev.floors.map((f) =>
       f.id !== floorId
         ? f
-        : {
-            ...f,
-            sharedStartTimestamp: null,
-            blocks: BLOCK_IDS.map((b) => ({
+            : {
+                ...f,
+                sharedStartTimestamp: null,
+                introRiddleIndex: null,
+                blocks: BLOCK_IDS.map((b) => ({
               id: b,
               status: 'READY' as const,
               accumulatedMs: 0,

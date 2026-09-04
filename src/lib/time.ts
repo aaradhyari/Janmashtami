@@ -7,6 +7,10 @@ import type { BlockState } from './types';
  * requestAnimationFrame) only re-renders — it never mutates timer values.
  */
 
+/** GET → SET → GO intro played on the wall before a floor's timers kick in. */
+export const FLOOR_COUNTDOWN_MS = 2400;
+export const COUNTDOWN_STEP_MS = 800;
+
 /** Live elapsed ms for a block at reference time `now`. */
 export function getBlockElapsed(block: BlockState, now: number): number {
   switch (block.status) {

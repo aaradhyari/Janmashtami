@@ -274,7 +274,17 @@ export default function AdminDashboard() {
                       <h2 className="text-lg font-bold tracking-[0.1em]">{fname}</h2>
                       <p className="text-[11px] tracking-[0.25em] text-[#FFF7ED]/50">
                         {status === 'IDLE' && 'READY TO START'}
-                        {status === 'RUNNING' && (isActive ? '● LIVE NOW' : '● IN PROGRESS')}
+                        {status === 'RUNNING' &&
+                          (floor.sharedStartTimestamp !== null &&
+                          now < floor.sharedStartTimestamp ? (
+                            <span className="font-bold text-[#FACC15]">
+                              ● GET SET GO…
+                            </span>
+                          ) : isActive ? (
+                            '● LIVE NOW'
+                          ) : (
+                            '● IN PROGRESS'
+                          ))}
                         {status === 'COMPLETE' && '✓ COMPLETE'}
                       </p>
                     </div>

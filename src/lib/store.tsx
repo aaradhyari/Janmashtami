@@ -15,6 +15,7 @@ import {
   type EventConfig,
   type EventState,
   type FloorId,
+  type FloorState,
 } from './types';
 import * as T from './transitions';
 
@@ -68,8 +69,19 @@ function normalizeEvent(e: EventState): EventState {
     typeof d === 'object' &&
     typeof (d as { index?: unknown }).index === 'number' &&
     typeof (d as { showAnswer?: unknown }).showAnswer === 'boolean';
-  if (valid) return e;
-  return { ...e, displayRiddle: null };
+  const cursor = (e as Partial<EventState>).nextRiddleIndex;
+  return {
+    ...e,
+    displayRiddle: valid ? (d as { index: number; showAnswer: boolean }) : null,
+    nextRiddleIndex: typeof cursor === 'number' ? cursor : 0,
+    floors: e.floors.map((fl) => ({
+      ...fl,
+      introRiddleIndex:
+        typeof (fl as Partial<FloorState>).introRiddleIndex === 'number'
+          ? (fl as FloorState).introRiddleIndex
+          : null,
+    })),
+  };
 }
 
 function loadConfig(): EventConfig {

@@ -20,6 +20,8 @@ export interface FloorState {
   id: FloorId;
   /** Shared timestamp created when START FLOOR was pressed. All 3 blocks derive t=0 from this. */
   sharedStartTimestamp: number | null;
+  /** Riddle shown on the wall during the GET SET GO intro. Null when no intro. */
+  introRiddleIndex: number | null;
   blocks: BlockState[];
 }
 
@@ -30,6 +32,8 @@ export interface EventState {
   floors: FloorState[];
   /** Riddle pushed to the display wall. Null = display shows timers. */
   displayRiddle: { index: number; showAnswer: boolean } | null;
+  /** Cursor for the auto-riddle shown at each floor start. Cycles through all riddles. */
+  nextRiddleIndex: number;
   /** Last mutation timestamp — used for sync + recovery ordering. */
   updatedAt: number;
 }
@@ -54,10 +58,12 @@ export function createInitialEvent(now: number = Date.now()): EventState {
   return {
     activeFloorId: null,
     displayRiddle: null,
+    nextRiddleIndex: 0,
     updatedAt: now,
     floors: FLOOR_IDS.map((id) => ({
       id,
       sharedStartTimestamp: null,
+      introRiddleIndex: null,
       blocks: BLOCK_IDS.map((b) => ({
         id: b,
         status: 'READY' as BlockStatus,
