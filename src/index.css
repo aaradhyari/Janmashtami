@@ -1,0 +1,170 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Space Grotesk", system-ui, sans-serif;
+  --font-timer: "JetBrains Mono", ui-monospace, monospace;
+
+  --color-navy: #0f172a;
+  --color-navy-soft: #1e293b;
+  --color-cream: #fff7ed;
+  --color-krishna: #2563eb;
+  --color-peacock: #06b6d4;
+  --color-handi: #facc15;
+  --color-saffron: #f97316;
+  --color-festival: #ec4899;
+  --color-radha: #8b5cf6;
+  --color-leaf: #22c55e;
+  --color-alert: #ef4444;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: #0f172a;
+  color: #fff7ed;
+  font-family: var(--font-display);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+.font-timer {
+  font-family: var(--font-timer);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- entrance + state animations (transform/opacity only) ---------- */
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pop-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.92) translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes finalize-flash {
+  0% {
+    box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.55);
+  }
+  100% {
+    box-shadow: 0 0 0 18px rgba(250, 204, 21, 0);
+  }
+}
+
+@keyframes complete-glow {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.92;
+    transform: scale(1.015);
+  }
+}
+
+@keyframes float-slow {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-14px);
+  }
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.8);
+  }
+}
+
+.anim-card-in {
+  animation: card-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.anim-fade-in {
+  animation: fade-in 0.3s ease both;
+}
+.anim-pop-in {
+  animation: pop-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.anim-finalize {
+  animation: finalize-flash 0.9s ease-out 2;
+}
+.anim-complete {
+  animation: complete-glow 2.4s ease-in-out infinite;
+}
+.anim-float-slow {
+  animation: float-slow 7s ease-in-out infinite;
+}
+.anim-pulse-dot {
+  animation: pulse-dot 1.1s ease-in-out infinite;
+}
+
+.stagger-1 {
+  animation-delay: 0.05s;
+}
+.stagger-2 {
+  animation-delay: 0.12s;
+}
+.stagger-3 {
+  animation-delay: 0.19s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .anim-card-in,
+  .anim-fade-in,
+  .anim-pop-in,
+  .anim-finalize,
+  .anim-complete,
+  .anim-float-slow,
+  .anim-pulse-dot {
+    animation: none;
+  }
+}
+
+/* thin scrollbars for admin panels */
+.nice-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.nice-scroll::-webkit-scrollbar-thumb {
+  background: rgba(139, 92, 246, 0.45);
+  border-radius: 8px;
+}
+.nice-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
