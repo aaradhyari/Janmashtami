@@ -117,7 +117,6 @@ interface EventStore {
   resetFloor: (floorId: FloorId) => void;
   resetAll: () => void;
   showRiddle: (index: number) => void;
-  revealRiddleAnswer: (show: boolean) => void;
   hideRiddle: () => void;
   updateConfig: (patch: Partial<EventConfig>) => void;
 }
@@ -283,13 +282,6 @@ export function EventProvider({ children }: { children: ReactNode }) {
     [mutate],
   );
 
-  const revealRiddleAnswer = useCallback(
-    (show: boolean) => {
-      mutate((prev) => T.revealRiddleAnswer(prev, show));
-    },
-    [mutate],
-  );
-
   const hideRiddle = useCallback(() => {
     mutate((prev) => T.hideRiddle(prev));
   }, [mutate]);
@@ -323,7 +315,6 @@ export function EventProvider({ children }: { children: ReactNode }) {
       resetFloor,
       resetAll,
       showRiddle,
-      revealRiddleAnswer,
       hideRiddle,
       updateConfig,
     }),
@@ -339,7 +330,6 @@ export function EventProvider({ children }: { children: ReactNode }) {
       resetFloor,
       resetAll,
       showRiddle,
-      revealRiddleAnswer,
       hideRiddle,
       updateConfig,
     ],

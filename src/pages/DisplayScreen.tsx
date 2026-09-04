@@ -6,7 +6,6 @@ import { RIDDLES } from '../lib/riddles';
 import {
   COUNTDOWN_STEP_MS,
   FLOOR_COUNTDOWN_MS,
-  RIDDLE_QUESTION_MS,
   RIDDLE_SHOW_MS,
 } from '../lib/time';
 import { useEventStore, useNow } from '../lib/store';
@@ -56,7 +55,6 @@ export default function DisplayScreen() {
       ? {
           number: event.displayRiddle.index + 1,
           ...RIDDLES[event.displayRiddle.index]!,
-          showAnswer: event.displayRiddle.showAnswer,
         }
       : null;
 
@@ -81,10 +79,9 @@ export default function DisplayScreen() {
     ? now - (intro.floor.sharedStartTimestamp! - FLOOR_COUNTDOWN_MS)
     : 0;
   const phase = introElapsed < COUNTDOWN_STEP_MS ? 0 : introElapsed < COUNTDOWN_STEP_MS * 2 ? 1 : 2;
-  // After GO: 'q' = riddle question, 'a' = question + answer, null = timers.
+  // After GO the wall shows the riddle question only — answers stay hidden.
   const afterGo = intro ? now - intro.floor.sharedStartTimestamp! : 0;
-  const riddleStage: 'q' | 'a' | null =
-    !intro || afterGo < 0 ? null : afterGo < RIDDLE_QUESTION_MS ? 'q' : 'a';
+  const showRiddleQ = !!intro && afterGo >= 0;
 
   return (
     <div className="relative flex h-screen w-screen flex-col overflow-hidden bg-[#0F172A] text-[#FFF7ED]">
@@ -104,10 +101,10 @@ export default function DisplayScreen() {
         </header>
 
         {intro ? (
-          riddleStage ? (
-            /* ---------------- AUTO-RIDDLE AFTER GO ---------------- */
+          showRiddleQ ? (
+            /* ---------------- AUTO-RIDDLE AFTER GO (QUESTION ONLY) ---------------- */
             <main
-              key={`auto-${intro.number}-${riddleStage}`}
+              key={`auto-${intro.number}`}
               className="anim-fade-in mx-auto flex w-full max-w-6xl min-h-0 flex-1 flex-col items-center justify-center px-4 text-center"
             >
               <p className="text-[2vh] font-bold tracking-[0.3em] text-[#FFF7ED]/50">
@@ -119,24 +116,15 @@ export default function DisplayScreen() {
               <blockquote className="mt-[2vh] text-[clamp(1.6rem,4.2vw,3.8rem)] font-semibold leading-snug">
                 {intro.riddle.question}
               </blockquote>
-              {riddleStage === 'a' ? (
-                <div className="anim-pop-in mt-[2.5vh] rounded-[1.2vw] bg-[#FACC15]/10 px-[4vw] py-[2vh] ring-2 ring-[#FACC15]/60">
-                  <p className="text-[1.8vh] tracking-[0.4em] text-[#FACC15]/80">✦ उत्तर ✦</p>
-                  <p className="mt-1 text-[clamp(2rem,5.5vw,4.5rem)] font-bold text-[#FACC15] drop-shadow-[0_0_28px_rgba(250,204,21,0.35)]">
-                    {intro.riddle.answer}
-                  </p>
-                </div>
-              ) : (
-                <div className="mt-[2.5vh] flex items-center gap-4" aria-hidden>
-                  {[0, 1, 2].map((d) => (
-                    <span
-                      key={d}
-                      className="anim-pulse-dot h-[1.6vh] w-[1.6vh] rounded-full bg-[#FFF7ED]/40"
-                      style={{ animationDelay: `${d * 0.25}s` }}
-                    />
-                  ))}
-                </div>
-              )}
+              <div className="mt-[2.5vh] flex items-center gap-4" aria-hidden>
+                {[0, 1, 2].map((d) => (
+                  <span
+                    key={d}
+                    className="anim-pulse-dot h-[1.6vh] w-[1.6vh] rounded-full bg-[#FFF7ED]/40"
+                    style={{ animationDelay: `${d * 0.25}s` }}
+                  />
+                ))}
+              </div>
             </main>
           ) : (
             /* ---------------- GET SET GO ---------------- */
@@ -176,9 +164,9 @@ export default function DisplayScreen() {
             </main>
           )
         ) : liveRiddle ? (
-          /* ---------------- LIVE RIDDLE ---------------- */
+          /* ---------------- LIVE RIDDLE (QUESTION ONLY) ---------------- */
           <main
-            key={`riddle-${liveRiddle.number}-${liveRiddle.showAnswer ? 'a' : 'q'}`}
+            key={`riddle-${liveRiddle.number}`}
             className="anim-fade-in mx-auto flex w-full max-w-6xl min-h-0 flex-1 flex-col items-center justify-center px-4 text-center"
           >
             <p className="inline-flex items-center gap-3 rounded-full bg-[#8B5CF6]/20 px-[2vw] py-[0.8vh] text-[2.2vh] font-bold tracking-[0.3em] text-[#C4B5FD] ring-1 ring-[#8B5CF6]/50">
@@ -187,24 +175,15 @@ export default function DisplayScreen() {
             <blockquote className="mt-[2.5vh] text-[clamp(1.6rem,4.2vw,3.8rem)] font-semibold leading-snug">
               {liveRiddle.question}
             </blockquote>
-            {liveRiddle.showAnswer ? (
-              <div className="anim-pop-in mt-[3vh] rounded-[1.2vw] bg-[#FACC15]/10 px-[4vw] py-[2vh] ring-2 ring-[#FACC15]/60">
-                <p className="text-[1.8vh] tracking-[0.4em] text-[#FACC15]/80">✦ उत्तर ✦</p>
-                <p className="mt-1 text-[clamp(2rem,5.5vw,4.5rem)] font-bold text-[#FACC15] drop-shadow-[0_0_28px_rgba(250,204,21,0.35)]">
-                  {liveRiddle.answer}
-                </p>
-              </div>
-            ) : (
-              <div className="mt-[3vh] flex items-center gap-4" aria-hidden>
-                {[0, 1, 2].map((d) => (
-                  <span
-                    key={d}
-                    className="anim-pulse-dot h-[1.6vh] w-[1.6vh] rounded-full bg-[#FFF7ED]/40"
-                    style={{ animationDelay: `${d * 0.25}s` }}
-                  />
-                ))}
-              </div>
-            )}
+            <div className="mt-[3vh] flex items-center gap-4" aria-hidden>
+              {[0, 1, 2].map((d) => (
+                <span
+                  key={d}
+                  className="anim-pulse-dot h-[1.6vh] w-[1.6vh] rounded-full bg-[#FFF7ED]/40"
+                  style={{ animationDelay: `${d * 0.25}s` }}
+                />
+              ))}
+            </div>
           </main>
         ) : !activeFloor ? (
           /* ---------------- WAITING STATE ---------------- */

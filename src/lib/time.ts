@@ -11,10 +11,8 @@ import type { BlockState } from './types';
 export const FLOOR_COUNTDOWN_MS = 2400;
 export const COUNTDOWN_STEP_MS = 800;
 
-/** Auto-riddle shown on the wall right after GO: question first, then answer. */
-export const RIDDLE_QUESTION_MS = 8000;
-export const RIDDLE_ANSWER_MS = 7000;
-export const RIDDLE_SHOW_MS = RIDDLE_QUESTION_MS + RIDDLE_ANSWER_MS;
+/** Auto-riddle question shown on the wall right after GO. Answers never appear on the wall. */
+export const RIDDLE_SHOW_MS = 15000;
 
 /** Live elapsed ms for a block at reference time `now`. */
 export function getBlockElapsed(block: BlockState, now: number): number {

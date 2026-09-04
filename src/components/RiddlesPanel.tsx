@@ -8,7 +8,7 @@ import { cn } from '../lib/cn';
  * preview Q&A locally, and push one live to the display wall.
  */
 export default function RiddlesPanel() {
-  const { event, showRiddle, revealRiddleAnswer, hideRiddle } = useEventStore();
+  const { event, showRiddle, hideRiddle } = useEventStore();
   const [selected, setSelected] = useState(0);
   const [localReveal, setLocalReveal] = useState(false);
 
@@ -124,25 +124,12 @@ export default function RiddlesPanel() {
               📺 SHOW ON DISPLAY WALL
             </button>
           ) : (
-            <>
-              <button
-                onClick={() => revealRiddleAnswer(!live?.showAnswer)}
-                className={cn(
-                  'rounded-xl px-4 py-3.5 text-sm font-bold tracking-wide transition active:scale-[0.99]',
-                  live?.showAnswer
-                    ? 'bg-white/10 hover:bg-white/20'
-                    : 'bg-gradient-to-r from-[#FACC15] to-[#F97316] text-[#0F172A] hover:brightness-110',
-                )}
-              >
-                {live?.showAnswer ? '🙈 HIDE ANSWER ON DISPLAY' : '✨ REVEAL ANSWER ON DISPLAY'}
-              </button>
-              <button
-                onClick={hideRiddle}
-                className="rounded-xl bg-white/10 px-4 py-3.5 text-sm font-bold tracking-wide transition hover:bg-[#EF4444]/25 active:scale-[0.99]"
-              >
-                ✖ REMOVE FROM DISPLAY
-              </button>
-            </>
+            <button
+              onClick={hideRiddle}
+              className="rounded-xl bg-white/10 px-4 py-3.5 text-sm font-bold tracking-wide transition hover:bg-[#EF4444]/25 active:scale-[0.99] sm:col-span-2"
+            >
+              ✖ REMOVE FROM DISPLAY
+            </button>
           )}
         </div>
 
@@ -162,10 +149,11 @@ export default function RiddlesPanel() {
         </div>
 
         <p className="mt-4 text-xs leading-relaxed text-[#FFF7ED]/45">
-          Pushing a riddle overlays the display wall — running timers keep
+          Pushing a riddle shows only its question on the display wall —
+          answers stay visible to the operator here. Running timers keep
           counting in the background and return when you remove the riddle.
-          Starting a floor auto-shows the next riddle after its GET SET GO
-          (question, then answer, then timers).
+          Starting a floor auto-shows the next riddle after its GET SET GO,
+          then timers.
         </p>
       </section>
     </div>

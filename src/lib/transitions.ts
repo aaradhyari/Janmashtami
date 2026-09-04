@@ -230,12 +230,6 @@ export function showRiddle(prev: EventState, index: number): EventState {
   return { ...prev, displayRiddle: { index, showAnswer: false } };
 }
 
-/** Reveal or hide the answer of the currently displayed riddle. */
-export function revealRiddleAnswer(prev: EventState, show: boolean): EventState {
-  if (!prev.displayRiddle) return prev;
-  return { ...prev, displayRiddle: { ...prev.displayRiddle, showAnswer: show } };
-}
-
 /** Remove the riddle — display returns to timers. */
 export function hideRiddle(prev: EventState): EventState {
   if (!prev.displayRiddle) return prev;
