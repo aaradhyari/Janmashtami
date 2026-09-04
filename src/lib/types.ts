@@ -28,6 +28,8 @@ export type FloorDerivedStatus = 'IDLE' | 'RUNNING' | 'COMPLETE';
 export interface EventState {
   activeFloorId: FloorId | null;
   floors: FloorState[];
+  /** Riddle pushed to the display wall. Null = display shows timers. */
+  displayRiddle: { index: number; showAnswer: boolean } | null;
   /** Last mutation timestamp — used for sync + recovery ordering. */
   updatedAt: number;
 }
@@ -51,6 +53,7 @@ export const FLOOR_INDEX: Record<FloorId, number> = {
 export function createInitialEvent(now: number = Date.now()): EventState {
   return {
     activeFloorId: null,
+    displayRiddle: null,
     updatedAt: now,
     floors: FLOOR_IDS.map((id) => ({
       id,

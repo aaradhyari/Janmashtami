@@ -1,4 +1,5 @@
 import { BLOCK_IDS, type BlockId, type EventState, type FloorId } from './types';
+import { RIDDLES } from './riddles';
 import { getBlockElapsed } from './time';
 
 /**
@@ -95,18 +96,30 @@ export function resumeBlock(
 ): EventState {
   return {
     ...prev,
-    floors: prev.floors.map((f) =>
-      f.id !== floorId
-        ? f
-        : {
-            ...f,
-            blocks: f.blocks.map((b) =>
-              b.id !== blockId || b.status !== 'PAUSED'
-                ? b
-                : { ...b, status: 'RUNNING' as const, runStartStamp: now, pauseStamp: null },
-            ),
-          },
-    ),
+    floors: prev.floors.map((f) => {
+      if (f.id !== floorId) return f;
+      // Re-sync to the shared floor clock so the resumed block matches the
+      // other blocks. Falls back to the preserved time when the floor has no
+      // shared start timestamp (e.g. individually started block).
+      const synced =
+        f.sharedStartTimestamp !== null
+          ? Math.max(0, now - f.sharedStartTimestamp)
+          : null;
+      return {
+        ...f,
+        blocks: f.blocks.map((b) =>
+          b.id !== blockId || b.status !== 'PAUSED'
+            ? b
+            : {
+                ...b,
+                status: 'RUNNING' as const,
+                accumulatedMs: synced ?? b.accumulatedMs,
+                runStartStamp: now,
+                pauseStamp: null,
+              },
+        ),
+      };
+    }),
   };
 }
 
@@ -190,4 +203,24 @@ export function resetFloor(prev: EventState, floorId: FloorId): EventState {
           },
     ),
   };
+}
+
+/* ---------------- display-wall riddles ---------------- */
+
+/** Push a riddle to the display wall (question hidden-answer first). */
+export function showRiddle(prev: EventState, index: number): EventState {
+  if (index < 0 || index >= RIDDLES.length) return prev;
+  return { ...prev, displayRiddle: { index, showAnswer: false } };
+}
+
+/** Reveal or hide the answer of the currently displayed riddle. */
+export function revealRiddleAnswer(prev: EventState, show: boolean): EventState {
+  if (!prev.displayRiddle) return prev;
+  return { ...prev, displayRiddle: { ...prev.displayRiddle, showAnswer: show } };
+}
+
+/** Remove the riddle — display returns to timers. */
+export function hideRiddle(prev: EventState): EventState {
+  if (!prev.displayRiddle) return prev;
+  return { ...prev, displayRiddle: null };
 }

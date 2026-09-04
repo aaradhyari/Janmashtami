@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import ConfirmDialog, { type ConfirmSpec } from '../components/ConfirmDialog';
 import FestiveBackground from '../components/FestiveBackground';
+import RiddlesPanel from '../components/RiddlesPanel';
 import StatusBadge from '../components/StatusBadge';
 import TimerDisplay from '../components/TimerDisplay';
+import { RIDDLES } from '../lib/riddles';
 import { useEventStore, useNow } from '../lib/store';
 import { formatElapsed, getBlockElapsed } from '../lib/time';
 import {
@@ -33,6 +35,7 @@ export default function AdminDashboard() {
   const now = useNow(200);
   const [confirm, setConfirm] = useState<ConfirmSpec | null>(null);
   const [selected, setSelected] = useState<Selection | null>(null);
+  const [tab, setTab] = useState<'timers' | 'riddles'>('timers');
 
   const activeFloor: FloorState | null = useMemo(() => {
     const byId = event.floors.find((f) => f.id === event.activeFloorId) ?? null;
@@ -140,7 +143,7 @@ export default function AdminDashboard() {
         if (floor) requestStartFloor(floor.id);
         return;
       }
-      if (e.key === ' ' && selected) {
+      if (e.key === ' ' && selected && tab === 'timers') {
         e.preventDefault();
         const floor = event.floors.find((f) => f.id === selected.floorId);
         const block = floor?.blocks.find((b) => b.id === selected.blockId);
@@ -149,7 +152,7 @@ export default function AdminDashboard() {
         else if (block.status === 'PAUSED') store.resumeBlock(floor.id, block.id);
         return;
       }
-      if ((e.key === 'r' || e.key === 'R') && selected) {
+      if ((e.key === 'r' || e.key === 'R') && selected && tab === 'timers') {
         const floor = event.floors.find((f) => f.id === selected.floorId);
         const block = floor?.blocks.find((b) => b.id === selected.blockId);
         if (floor && block && block.status !== 'READY') requestResetBlock(floor, block);
@@ -158,7 +161,7 @@ export default function AdminDashboard() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [event, selected, confirm, config]);
+  }, [event, selected, confirm, config, tab]);
 
   const systemStatus = !activeFloor
     ? 'STANDBY'
@@ -215,6 +218,17 @@ export default function AdminDashboard() {
                   {activeFloor ? `${finalizedCount(activeFloor)} / 3` : '—'}
                 </dd>
               </div>
+              {event.displayRiddle && (
+                <div>
+                  <dt className="text-[10px] tracking-[0.25em] text-[#FFF7ED]/50">
+                    WALL RIDDLE
+                  </dt>
+                  <dd className="flex items-center gap-1.5 text-lg font-bold text-[#FCA5A5]">
+                    <span className="anim-pulse-dot h-2 w-2 rounded-full bg-[#EF4444]" />
+                    ❓ {event.displayRiddle.index + 1} / {RIDDLES.length}
+                  </dd>
+                </div>
+              )}
             </dl>
             <nav className="ml-auto flex flex-wrap gap-2 text-sm font-semibold">
               <a
@@ -235,7 +249,43 @@ export default function AdminDashboard() {
           </div>
         </header>
 
+        {/* ---------- section tabs ---------- */}
+        <div
+          role="tablist"
+          aria-label="Admin sections"
+          className="mt-5 grid grid-cols-2 gap-2 rounded-2xl bg-white/[0.04] p-2 ring-1 ring-white/10"
+        >
+          {(
+            [
+              { id: 'timers', label: '⏱ TIMERS · FLOORS & BLOCKS' },
+              { id: 'riddles', label: '❓ RIDDLES · 25 पहेलियाँ' },
+            ] as const
+          ).map((t) => (
+            <button
+              key={t.id}
+              role="tab"
+              aria-selected={tab === t.id}
+              onClick={() => setTab(t.id)}
+              className={cn(
+                'rounded-xl px-4 py-3.5 text-sm font-bold tracking-wider transition active:scale-[0.99]',
+                tab === t.id
+                  ? 'bg-gradient-to-r from-[#F97316] to-[#EC4899] text-white shadow-lg shadow-[#F97316]/25'
+                  : 'bg-transparent text-[#FFF7ED]/55 hover:bg-white/[0.07] hover:text-[#FFF7ED]',
+              )}
+            >
+              {t.label}
+              {t.id === 'riddles' && event.displayRiddle && (
+                <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-[#EF4444] px-2 py-0.5 text-[10px] font-bold">
+                  <span className="anim-pulse-dot h-1.5 w-1.5 rounded-full bg-white" />
+                  LIVE
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
         {/* ---------- floors ---------- */}
+        {tab === 'timers' && (
         <main className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-2">
           {event.floors.map((floor) => {
             const status = floorStatus(floor);
@@ -310,6 +360,13 @@ export default function AdminDashboard() {
             );
           })}
         </main>
+        )}
+
+        {tab === 'riddles' && (
+          <main className="anim-fade-in mt-5">
+            <RiddlesPanel />
+          </main>
+        )}
 
         {/* ---------- footer ---------- */}
         <footer className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-2xl bg-white/[0.03] px-5 py-4 text-xs text-[#FFF7ED]/55 ring-1 ring-white/10">
@@ -320,7 +377,7 @@ export default function AdminDashboard() {
             <Kbd>1</Kbd>–<Kbd>4</Kbd> start floor
           </span>
           <span>
-            <Kbd>Space</Kbd> pause / resume selected block
+            <Kbd>Space</Kbd> pause / re-sync selected block
           </span>
           <span>
             <Kbd>R</Kbd> reset selected block
@@ -442,9 +499,10 @@ function BlockCard({
           <>
             <button
               onClick={onResume}
+              title="Resume in sync with the floor clock"
               className="w-full rounded-lg bg-[#22C55E] px-2 py-2.5 text-xs font-bold text-[#0F172A] transition hover:bg-[#4ADE80] active:scale-[0.98]"
             >
-              ▶ RESUME
+              ▶ RESUME · SYNC
             </button>
             <button
               onClick={onFinalize}
@@ -452,6 +510,9 @@ function BlockCard({
             >
               ✓ FINALIZE TIME
             </button>
+            <p className="text-[10px] tracking-wider text-[#FFF7ED]/40">
+              resume re-syncs to floor time
+            </p>
           </>
         )}
         {block.status === 'READY' &&

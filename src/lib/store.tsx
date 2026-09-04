@@ -53,11 +53,23 @@ function loadEvent(): EventState {
     const raw = localStorage.getItem(EVENT_KEY);
     if (!raw) return createInitialEvent();
     const parsed: unknown = JSON.parse(raw);
-    if (isValidEvent(parsed)) return parsed;
+    if (isValidEvent(parsed)) return normalizeEvent(parsed);
     return createInitialEvent();
   } catch {
     return createInitialEvent();
   }
+}
+
+/** Backfill fields added after a state was first persisted (never crash on old saves). */
+function normalizeEvent(e: EventState): EventState {
+  const d = (e as Partial<EventState>).displayRiddle;
+  const valid =
+    d !== null &&
+    typeof d === 'object' &&
+    typeof (d as { index?: unknown }).index === 'number' &&
+    typeof (d as { showAnswer?: unknown }).showAnswer === 'boolean';
+  if (valid) return e;
+  return { ...e, displayRiddle: null };
 }
 
 function loadConfig(): EventConfig {
@@ -92,6 +104,9 @@ interface EventStore {
   resetBlock: (floorId: FloorId, blockId: BlockId) => void;
   resetFloor: (floorId: FloorId) => void;
   resetAll: () => void;
+  showRiddle: (index: number) => void;
+  revealRiddleAnswer: (show: boolean) => void;
+  hideRiddle: () => void;
   updateConfig: (patch: Partial<EventConfig>) => void;
 }
 
@@ -115,7 +130,7 @@ export function EventProvider({ children }: { children: ReactNode }) {
         const msg = e.data;
         if (!msg || msg.source === sourceRef.current) return;
         if (msg.kind === 'EVENT' && msg.state && isValidEvent(msg.state)) {
-          setEvent(msg.state);
+          setEvent(normalizeEvent(msg.state));
         } else if (msg.kind === 'CONFIG' && msg.config) {
           setConfig(msg.config);
         }
@@ -128,7 +143,7 @@ export function EventProvider({ children }: { children: ReactNode }) {
       if (e.key === EVENT_KEY && e.newValue) {
         try {
           const parsed: unknown = JSON.parse(e.newValue);
-          if (isValidEvent(parsed)) setEvent(parsed);
+          if (isValidEvent(parsed)) setEvent(normalizeEvent(parsed));
         } catch {
           /* ignore corrupt payloads */
         }
@@ -249,6 +264,24 @@ export function EventProvider({ children }: { children: ReactNode }) {
     setEvent(fresh);
   }, [publishEvent]);
 
+  const showRiddle = useCallback(
+    (index: number) => {
+      mutate((prev) => T.showRiddle(prev, index));
+    },
+    [mutate],
+  );
+
+  const revealRiddleAnswer = useCallback(
+    (show: boolean) => {
+      mutate((prev) => T.revealRiddleAnswer(prev, show));
+    },
+    [mutate],
+  );
+
+  const hideRiddle = useCallback(() => {
+    mutate((prev) => T.hideRiddle(prev));
+  }, [mutate]);
+
   const updateConfig = useCallback(
     (patch: Partial<EventConfig>) => {
       setConfig((prev) => {
@@ -277,6 +310,9 @@ export function EventProvider({ children }: { children: ReactNode }) {
       resetBlock,
       resetFloor,
       resetAll,
+      showRiddle,
+      revealRiddleAnswer,
+      hideRiddle,
       updateConfig,
     }),
     [
@@ -290,6 +326,9 @@ export function EventProvider({ children }: { children: ReactNode }) {
       resetBlock,
       resetFloor,
       resetAll,
+      showRiddle,
+      revealRiddleAnswer,
+      hideRiddle,
       updateConfig,
     ],
   );
