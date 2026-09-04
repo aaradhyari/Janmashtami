@@ -8,24 +8,33 @@ import { FLOOR_COUNTDOWN_MS, getBlockElapsed } from './time';
  * persistence + BroadcastChannel sync; tests exercise them directly.
  */
 
-export function startFloor(prev: EventState, floorId: FloorId, now: number): EventState {
+export function startFloor(
+  prev: EventState,
+  floorId: FloorId,
+  now: number,
+  riddleIndex: number | null,
+): EventState {
   // Timers kick in when the GET SET GO intro finishes. Stamping the future
   // GO moment up-front keeps it deterministic: every tab, refresh recovery
-  // and the intro animation all agree on t=0 with no follow-up action.
+  // and the wall animation all agree on t=0 with no follow-up action.
   const readyAt = now + FLOOR_COUNTDOWN_MS;
+  const valid =
+    riddleIndex !== null && riddleIndex >= 0 && riddleIndex < RIDDLES.length
+      ? riddleIndex
+      : null;
   const cursor = typeof prev.nextRiddleIndex === 'number' ? prev.nextRiddleIndex : 0;
-  const riddleIndex = ((cursor % RIDDLES.length) + RIDDLES.length) % RIDDLES.length;
   return {
     ...prev,
     activeFloorId: floorId,
-    nextRiddleIndex: cursor + 1,
+    // Next picker defaults to the riddle after the one just chosen.
+    nextRiddleIndex: valid !== null ? valid + 1 : cursor,
     floors: prev.floors.map((f) =>
       f.id !== floorId
         ? f
         : {
             ...f,
             sharedStartTimestamp: readyAt,
-            introRiddleIndex: riddleIndex,
+            introRiddleIndex: valid,
             blocks: BLOCK_IDS.map((b) => ({
               id: b,
               status: 'RUNNING' as const,

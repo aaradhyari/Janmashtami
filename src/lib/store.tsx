@@ -108,7 +108,7 @@ function loadConfig(): EventConfig {
 interface EventStore {
   event: EventState;
   config: EventConfig;
-  startFloor: (floorId: FloorId) => void;
+  startFloor: (floorId: FloorId, riddleIndex: number | null) => void;
   pauseBlock: (floorId: FloorId, blockId: BlockId) => void;
   resumeBlock: (floorId: FloorId, blockId: BlockId) => void;
   startBlock: (floorId: FloorId, blockId: BlockId) => void;
@@ -221,8 +221,8 @@ export function EventProvider({ children }: { children: ReactNode }) {
   );
 
   const startFloor = useCallback(
-    (floorId: FloorId) => {
-      mutate((prev, now) => T.startFloor(prev, floorId, now));
+    (floorId: FloorId, riddleIndex: number | null) => {
+      mutate((prev, now) => T.startFloor(prev, floorId, now, riddleIndex));
     },
     [mutate],
   );

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import ConfirmDialog, { type ConfirmSpec } from '../components/ConfirmDialog';
 import FestiveBackground from '../components/FestiveBackground';
+import RiddlePickerDialog from '../components/RiddlePickerDialog';
 import RiddlesPanel from '../components/RiddlesPanel';
 import StatusBadge from '../components/StatusBadge';
 import TimerDisplay from '../components/TimerDisplay';
@@ -34,6 +35,7 @@ export default function AdminDashboard() {
   const { event, config } = store;
   const now = useNow(200);
   const [confirm, setConfirm] = useState<ConfirmSpec | null>(null);
+  const [picker, setPicker] = useState<{ floorId: FloorId; warning: string | null } | null>(null);
   const [selected, setSelected] = useState<Selection | null>(null);
 
   const activeFloor: FloorState | null = useMemo(() => {
@@ -58,33 +60,15 @@ export default function AdminDashboard() {
     const other = otherActiveName(floorId);
     const name = config.floorNames[floorId];
 
+    // Every start first asks which riddle plays after GET SET GO.
+    // Restart / floor-switch warnings ride along inside the picker.
+    let warning: string | null = null;
     if (status !== 'IDLE') {
-      setConfirm({
-        title: `Restart ${name}?`,
-        message: `${name} already has timer data.\nStarting again will reset all three blocks to 00:00.`,
-        confirmLabel: `RESTART ${name}`,
-        tone: 'danger',
-        onConfirm: () => {
-          store.startFloor(floorId);
-          setConfirm(null);
-        },
-      });
-      return;
+      warning = `${name} already has timer data.\nStarting again will reset all three blocks to 00:00.`;
+    } else if (other) {
+      warning = `${other} is currently active.\nStarting ${name} will take over the display.`;
     }
-    if (other) {
-      setConfirm({
-        title: `${other} is currently active`,
-        message: `${other} is currently active.\n\nStart ${name}?`,
-        confirmLabel: `START ${name}`,
-        tone: 'start',
-        onConfirm: () => {
-          store.startFloor(floorId);
-          setConfirm(null);
-        },
-      });
-      return;
-    }
-    store.startFloor(floorId);
+    setPicker({ floorId, warning });
   };
 
   const requestResetFloor = (floorId: FloorId) => {
@@ -136,7 +120,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (isTypingTarget(e.target) || confirm) return;
+      if (isTypingTarget(e.target) || confirm || picker) return;
       if (e.key >= '1' && e.key <= '4') {
         const floor = event.floors[Number(e.key) - 1];
         if (floor) requestStartFloor(floor.id);
@@ -160,7 +144,7 @@ export default function AdminDashboard() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [event, selected, confirm, config]);
+  }, [event, selected, confirm, picker, config]);
 
   const systemStatus = !activeFloor
     ? 'STANDBY'
@@ -397,6 +381,20 @@ export default function AdminDashboard() {
 
       {confirm && (
         <ConfirmDialog spec={confirm} onClose={() => setConfirm(null)} />
+      )}
+      {picker && (
+        <RiddlePickerDialog
+          floorName={config.floorNames[picker.floorId] ?? picker.floorId}
+          defaultIndex={
+            ((event.nextRiddleIndex % RIDDLES.length) + RIDDLES.length) % RIDDLES.length
+          }
+          warning={picker.warning}
+          onClose={() => setPicker(null)}
+          onConfirm={(riddleIndex) => {
+            store.startFloor(picker.floorId, riddleIndex);
+            setPicker(null);
+          }}
+        />
       )}
     </div>
   );

@@ -58,18 +58,21 @@ export default function DisplayScreen() {
         }
       : null;
 
-  // Floor-start sequence: GET SET GO countdown, then the auto-riddle
-  // (question, then answer), then timers. All derived from the GO moment,
-  // so every tab and refresh recovery agrees with no follow-up action.
+  // Floor-start sequence: GET SET GO countdown (always), then the picked
+  // riddle question (only if the operator chose one), then timers.
+  // All derived from the GO moment — every tab and refresh agrees.
   const intro = useMemo(() => {
+    const countdown = event.floors.find(
+      (f) => f.sharedStartTimestamp !== null && now < f.sharedStartTimestamp,
+    );
+    if (countdown) return { floor: countdown, riddle: null, number: 0 };
     const fl = event.floors.find(
       (f) =>
         f.sharedStartTimestamp !== null &&
         f.introRiddleIndex !== null &&
         now < f.sharedStartTimestamp + RIDDLE_SHOW_MS,
     );
-    if (!fl || fl.introRiddleIndex === null || fl.sharedStartTimestamp === null)
-      return null;
+    if (!fl || fl.introRiddleIndex === null) return null;
     const riddle = RIDDLES[fl.introRiddleIndex % RIDDLES.length];
     if (!riddle) return null;
     return { floor: fl, riddle, number: fl.introRiddleIndex + 1 };
@@ -79,9 +82,6 @@ export default function DisplayScreen() {
     ? now - (intro.floor.sharedStartTimestamp! - FLOOR_COUNTDOWN_MS)
     : 0;
   const phase = introElapsed < COUNTDOWN_STEP_MS ? 0 : introElapsed < COUNTDOWN_STEP_MS * 2 ? 1 : 2;
-  // After GO the wall shows the riddle question only — answers stay hidden.
-  const afterGo = intro ? now - intro.floor.sharedStartTimestamp! : 0;
-  const showRiddleQ = !!intro && afterGo >= 0;
 
   return (
     <div className="relative flex h-screen w-screen flex-col overflow-hidden bg-[#0F172A] text-[#FFF7ED]">
@@ -101,7 +101,7 @@ export default function DisplayScreen() {
         </header>
 
         {intro ? (
-          showRiddleQ ? (
+          intro.riddle ? (
             /* ---------------- AUTO-RIDDLE AFTER GO (QUESTION ONLY) ---------------- */
             <main
               key={`auto-${intro.number}`}

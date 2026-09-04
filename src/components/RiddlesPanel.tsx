@@ -152,7 +152,7 @@ export default function RiddlesPanel() {
           Pushing a riddle shows only its question on the display wall —
           answers stay visible to the operator here. Running timers keep
           counting in the background and return when you remove the riddle.
-          Starting a floor auto-shows the next riddle after its GET SET GO,
+          Starting a floor asks which riddle to play after its GET SET GO,
           then timers.
         </p>
       </section>
