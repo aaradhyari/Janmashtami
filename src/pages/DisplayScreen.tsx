@@ -6,7 +6,6 @@ import { RIDDLES } from '../lib/riddles';
 import {
   COUNTDOWN_STEP_MS,
   FLOOR_COUNTDOWN_MS,
-  RIDDLE_SHOW_MS,
 } from '../lib/time';
 import { useEventStore, useNow } from '../lib/store';
 import { getBlockElapsed } from '../lib/time';
@@ -59,24 +58,15 @@ export default function DisplayScreen() {
         }
       : null;
 
-  // Floor-start sequence: GET SET GO countdown (always), then the picked
-  // riddle question (only if the operator chose one), then timers.
-  // All derived from the GO moment — every tab and refresh agrees.
+  // GET SET GO countdown: a floor whose GO moment (shared start stamp) is
+  // still ahead. After GO the wall shows the live riddle (if the operator
+  // picked one) or the timers.
   const intro = useMemo(() => {
-    const countdown = event.floors.find(
+    const fl = event.floors.find(
       (f) => f.sharedStartTimestamp !== null && now < f.sharedStartTimestamp,
     );
-    if (countdown) return { floor: countdown, riddle: null, number: 0 };
-    const fl = event.floors.find(
-      (f) =>
-        f.sharedStartTimestamp !== null &&
-        f.introRiddleIndex !== null &&
-        now < f.sharedStartTimestamp + RIDDLE_SHOW_MS,
-    );
-    if (!fl || fl.introRiddleIndex === null) return null;
-    const riddle = RIDDLES[fl.introRiddleIndex % RIDDLES.length];
-    if (!riddle) return null;
-    return { floor: fl, riddle, number: fl.introRiddleIndex + 1 };
+    if (!fl) return null;
+    return { floor: fl };
   }, [event, now]);
 
   const introElapsed = intro
@@ -102,34 +92,8 @@ export default function DisplayScreen() {
         </header>
 
         {intro ? (
-          intro.riddle ? (
-            /* ---------------- AUTO-RIDDLE AFTER GO (QUESTION ONLY) ---------------- */
-            <main
-              key={`auto-${intro.number}`}
-              className="anim-fade-in mx-auto flex w-full max-w-6xl min-h-0 flex-1 flex-col items-center justify-center px-4 text-center"
-            >
-              <p className="text-[2vh] font-bold tracking-[0.3em] text-[#FFF7ED]/50">
-                {config.floorNames[intro.floor.id]} · TIMERS RUNNING
-              </p>
-              <p className="mt-[1.5vh] inline-flex items-center gap-3 rounded-full bg-[#8B5CF6]/20 px-[2vw] py-[0.8vh] text-[2.2vh] font-bold tracking-[0.3em] text-[#C4B5FD] ring-1 ring-[#8B5CF6]/50">
-                ❓ पहेली {intro.number} / {RIDDLES.length}
-              </p>
-              <blockquote className="mt-[2vh] text-[clamp(1.6rem,4.2vw,3.8rem)] font-semibold leading-snug">
-                {intro.riddle.question}
-              </blockquote>
-              <div className="mt-[2.5vh] flex items-center gap-4" aria-hidden>
-                {[0, 1, 2].map((d) => (
-                  <span
-                    key={d}
-                    className="anim-pulse-dot h-[1.6vh] w-[1.6vh] rounded-full bg-[#FFF7ED]/40"
-                    style={{ animationDelay: `${d * 0.25}s` }}
-                  />
-                ))}
-              </div>
-            </main>
-          ) : (
-            /* ---------------- GET SET GO ---------------- */
-            <main className="anim-fade-in mx-auto flex w-full max-w-6xl min-h-0 flex-1 flex-col items-center justify-center px-4 text-center">
+          /* ---------------- GET SET GO ---------------- */
+          <main className="anim-fade-in mx-auto flex w-full max-w-6xl min-h-0 flex-1 flex-col items-center justify-center px-4 text-center">
               <h2 className="anim-card-in text-[4vh] font-bold leading-none tracking-[0.15em]">
                 {config.floorNames[intro.floor.id]}
               </h2>
@@ -163,7 +127,6 @@ export default function DisplayScreen() {
                 ))}
               </div>
             </main>
-          )
         ) : liveRiddle ? (
           /* ---------------- LIVE RIDDLE (OPERATOR-CONTROLLED ANSWER) ---------------- */
           <main

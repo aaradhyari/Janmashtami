@@ -185,7 +185,7 @@ export default function RiddlesPanel() {
         )}
         {isUsedSelected && !isLiveSelected && (
           <p className="mt-2 text-center text-xs font-semibold tracking-wider text-[#4ADE80]/80">
-            ✓ Shown on the wall before — marked DONE, cannot be reused.
+            ✓ Answer shown on the wall — marked DONE, cannot be reused.
           </p>
         )}
 
@@ -206,9 +206,10 @@ export default function RiddlesPanel() {
 
         <p className="mt-4 text-xs leading-relaxed text-[#FFF7ED]/45">
           Control everything from here: push a question live, reveal its
-          answer on the wall, then remove it. Any riddle shown on the wall is
-          marked DONE forever. Starting a floor asks which fresh riddle to
-          play after its GET SET GO, then timers.
+          answer on the wall, then remove it. A riddle is marked DONE only
+          when its answer hits the wall — questions alone stay reusable.
+          Starting a floor asks which fresh riddle to put live after its
+          GET SET GO — it stays under your control here.
         </p>
         <button
           onClick={() => setConfirmHistoryReset(true)}

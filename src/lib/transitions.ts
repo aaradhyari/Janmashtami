@@ -31,18 +31,18 @@ export function startFloor(
     activeFloorId: floorId,
     // Next picker defaults to the riddle after the one just chosen.
     nextRiddleIndex: valid !== null ? valid + 1 : cursor,
-    // A shown riddle is DONE the moment its floor starts — never reused.
-    usedRiddles:
-      valid !== null && !prev.usedRiddles.includes(valid)
-        ? [...prev.usedRiddles, valid]
-        : prev.usedRiddles,
+    // The picked riddle goes live on the wall (question first) so the
+    // operator controls its answer and removal from the panel. DONE is
+    // marked only if its answer gets shown — never for questions alone.
+    // No pick leaves any manually pushed riddle untouched.
+    displayRiddle:
+      valid !== null ? { index: valid, showAnswer: false } : prev.displayRiddle,
     floors: prev.floors.map((f) =>
       f.id !== floorId
         ? f
         : {
             ...f,
             sharedStartTimestamp: readyAt,
-            introRiddleIndex: valid,
             blocks: BLOCK_IDS.map((b) => ({
               id: b,
               status: 'RUNNING' as const,
@@ -226,7 +226,6 @@ export function resetFloor(prev: EventState, floorId: FloorId): EventState {
             : {
                 ...f,
                 sharedStartTimestamp: null,
-                introRiddleIndex: null,
                 blocks: BLOCK_IDS.map((b) => ({
               id: b,
               status: 'READY' as const,
@@ -241,7 +240,7 @@ export function resetFloor(prev: EventState, floorId: FloorId): EventState {
 
 /* ---------------- display-wall riddles ---------------- */
 
-/** Push a riddle to the display wall (question first; answers only via reveal). */
+/** Push a riddle to the display wall. DONE only when its answer is shown. */
 export function showRiddle(
   prev: EventState,
   index: number,
@@ -253,16 +252,22 @@ export function showRiddle(
   return {
     ...prev,
     displayRiddle: { index, showAnswer: startRevealed },
-    usedRiddles: [...prev.usedRiddles, index],
+    // Question-only shows stay reusable; an instant answer marks DONE.
+    usedRiddles:
+      startRevealed && !prev.usedRiddles.includes(index)
+        ? [...prev.usedRiddles, index]
+        : prev.usedRiddles,
   };
 }
 
 /** Reveal or hide the answer of the currently displayed riddle. */
 export function revealRiddleAnswer(prev: EventState, show: boolean): EventState {
   if (!prev.displayRiddle) return prev;
-  const used = prev.usedRiddles.includes(prev.displayRiddle.index)
-    ? prev.usedRiddles
-    : [...prev.usedRiddles, prev.displayRiddle.index];
+  // Only a shown answer marks DONE — questions alone stay reusable.
+  const used =
+    show && !prev.usedRiddles.includes(prev.displayRiddle.index)
+      ? [...prev.usedRiddles, prev.displayRiddle.index]
+      : prev.usedRiddles;
   return {
     ...prev,
     displayRiddle: { ...prev.displayRiddle, showAnswer: show },

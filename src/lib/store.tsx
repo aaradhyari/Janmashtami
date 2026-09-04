@@ -15,7 +15,6 @@ import {
   type EventConfig,
   type EventState,
   type FloorId,
-  type FloorState,
 } from './types';
 import * as T from './transitions';
 
@@ -78,13 +77,6 @@ function normalizeEvent(e: EventState): EventState {
     usedRiddles: Array.isArray(usedRaw)
       ? usedRaw.filter((n): n is number => typeof n === 'number')
       : [],
-    floors: e.floors.map((fl) => ({
-      ...fl,
-      introRiddleIndex:
-        typeof (fl as Partial<FloorState>).introRiddleIndex === 'number'
-          ? (fl as FloorState).introRiddleIndex
-          : null,
-    })),
   };
 }
 

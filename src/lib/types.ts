@@ -20,8 +20,6 @@ export interface FloorState {
   id: FloorId;
   /** Shared timestamp created when START FLOOR was pressed. All 3 blocks derive t=0 from this. */
   sharedStartTimestamp: number | null;
-  /** Riddle shown on the wall during the GET SET GO intro. Null when no intro. */
-  introRiddleIndex: number | null;
   blocks: BlockState[];
 }
 
@@ -66,7 +64,6 @@ export function createInitialEvent(now: number = Date.now()): EventState {
     floors: FLOOR_IDS.map((id) => ({
       id,
       sharedStartTimestamp: null,
-      introRiddleIndex: null,
       blocks: BLOCK_IDS.map((b) => ({
         id: b,
         status: 'READY' as BlockStatus,
