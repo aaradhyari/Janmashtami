@@ -68,23 +68,31 @@ export function pauseBlock(
 ): EventState {
   return {
     ...prev,
-    floors: prev.floors.map((f) =>
-      f.id !== floorId
-        ? f
-        : {
-            ...f,
-            blocks: f.blocks.map((b) => {
-              if (b.id !== blockId || b.status !== 'RUNNING') return b;
-              return {
-                ...b,
-                status: 'PAUSED' as const,
-                accumulatedMs: getBlockElapsed(b, now),
-                runStartStamp: null,
-                pauseStamp: now,
-              };
-            }),
-          },
-    ),
+    floors: prev.floors.map((f) => {
+      if (f.id !== floorId) return f;
+      const blocks = f.blocks.map((b) => {
+        if (b.id !== blockId || b.status !== 'RUNNING') return b;
+        return {
+          ...b,
+          status: 'PAUSED' as const,
+          accumulatedMs: getBlockElapsed(b, now),
+          runStartStamp: null,
+          pauseStamp: now,
+        };
+      });
+      // All 3 blocks paused -> auto-finalize the floor at the frozen times.
+      const allPaused = blocks.every((b) => b.status === 'PAUSED');
+      return {
+        ...f,
+        blocks: allPaused
+          ? blocks.map((b) => ({
+              ...b,
+              status: 'FINALIZED' as const,
+              pauseStamp: null,
+            }))
+          : blocks,
+      };
+    }),
   };
 }
 

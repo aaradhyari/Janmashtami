@@ -355,6 +355,7 @@ export default function AdminDashboard() {
           <span>
             <Kbd>R</Kbd> reset selected block
           </span>
+          <span>pausing all 3 blocks auto-finalizes the floor</span>
           <span className="ml-auto">Click a block card to select it · sync via BroadcastChannel + localStorage</span>
           <button
             onClick={() =>
