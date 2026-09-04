@@ -35,7 +35,6 @@ export default function AdminDashboard() {
   const now = useNow(200);
   const [confirm, setConfirm] = useState<ConfirmSpec | null>(null);
   const [selected, setSelected] = useState<Selection | null>(null);
-  const [tab, setTab] = useState<'timers' | 'riddles'>('timers');
 
   const activeFloor: FloorState | null = useMemo(() => {
     const byId = event.floors.find((f) => f.id === event.activeFloorId) ?? null;
@@ -143,7 +142,7 @@ export default function AdminDashboard() {
         if (floor) requestStartFloor(floor.id);
         return;
       }
-      if (e.key === ' ' && selected && tab === 'timers') {
+      if (e.key === ' ' && selected) {
         e.preventDefault();
         const floor = event.floors.find((f) => f.id === selected.floorId);
         const block = floor?.blocks.find((b) => b.id === selected.blockId);
@@ -152,7 +151,7 @@ export default function AdminDashboard() {
         else if (block.status === 'PAUSED') store.resumeBlock(floor.id, block.id);
         return;
       }
-      if ((e.key === 'r' || e.key === 'R') && selected && tab === 'timers') {
+      if ((e.key === 'r' || e.key === 'R') && selected) {
         const floor = event.floors.find((f) => f.id === selected.floorId);
         const block = floor?.blocks.find((b) => b.id === selected.blockId);
         if (floor && block && block.status !== 'READY') requestResetBlock(floor, block);
@@ -161,7 +160,7 @@ export default function AdminDashboard() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [event, selected, confirm, config, tab]);
+  }, [event, selected, confirm, config]);
 
   const systemStatus = !activeFloor
     ? 'STANDBY'
@@ -249,43 +248,7 @@ export default function AdminDashboard() {
           </div>
         </header>
 
-        {/* ---------- section tabs ---------- */}
-        <div
-          role="tablist"
-          aria-label="Admin sections"
-          className="mt-5 grid grid-cols-2 gap-2 rounded-2xl bg-white/[0.04] p-2 ring-1 ring-white/10"
-        >
-          {(
-            [
-              { id: 'timers', label: '⏱ TIMERS · FLOORS & BLOCKS' },
-              { id: 'riddles', label: '❓ RIDDLES · 25 पहेलियाँ' },
-            ] as const
-          ).map((t) => (
-            <button
-              key={t.id}
-              role="tab"
-              aria-selected={tab === t.id}
-              onClick={() => setTab(t.id)}
-              className={cn(
-                'rounded-xl px-4 py-3.5 text-sm font-bold tracking-wider transition active:scale-[0.99]',
-                tab === t.id
-                  ? 'bg-gradient-to-r from-[#F97316] to-[#EC4899] text-white shadow-lg shadow-[#F97316]/25'
-                  : 'bg-transparent text-[#FFF7ED]/55 hover:bg-white/[0.07] hover:text-[#FFF7ED]',
-              )}
-            >
-              {t.label}
-              {t.id === 'riddles' && event.displayRiddle && (
-                <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-[#EF4444] px-2 py-0.5 text-[10px] font-bold">
-                  <span className="anim-pulse-dot h-1.5 w-1.5 rounded-full bg-white" />
-                  LIVE
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
-
         {/* ---------- floors ---------- */}
-        {tab === 'timers' && (
         <main className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-2">
           {event.floors.map((floor) => {
             const status = floorStatus(floor);
@@ -360,13 +323,23 @@ export default function AdminDashboard() {
             );
           })}
         </main>
-        )}
 
-        {tab === 'riddles' && (
-          <main className="anim-fade-in mt-5">
-            <RiddlesPanel />
-          </main>
-        )}
+        {/* ---------- riddles ---------- */}
+        <section aria-label="Riddles" className="mt-8">
+          <div className="mb-4 flex items-center gap-3">
+            <h2 className="text-lg font-bold tracking-[0.1em]">
+              ❓ RIDDLES · 25 पहेलियाँ
+            </h2>
+            <div className="h-px flex-1 bg-gradient-to-r from-[#8B5CF6]/60 to-transparent" />
+            {event.displayRiddle && (
+              <span className="flex items-center gap-1.5 rounded-full bg-[#EF4444]/15 px-3 py-1 text-[11px] font-bold tracking-widest text-[#FCA5A5] ring-1 ring-[#EF4444]/40">
+                <span className="anim-pulse-dot h-1.5 w-1.5 rounded-full bg-[#EF4444]" />
+                LIVE ON WALL
+              </span>
+            )}
+          </div>
+          <RiddlesPanel />
+        </section>
 
         {/* ---------- footer ---------- */}
         <footer className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-2xl bg-white/[0.03] px-5 py-4 text-xs text-[#FFF7ED]/55 ring-1 ring-white/10">
