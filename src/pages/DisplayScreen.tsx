@@ -55,6 +55,7 @@ export default function DisplayScreen() {
       ? {
           number: event.displayRiddle.index + 1,
           ...RIDDLES[event.displayRiddle.index]!,
+          showAnswer: event.displayRiddle.showAnswer,
         }
       : null;
 
@@ -164,9 +165,9 @@ export default function DisplayScreen() {
             </main>
           )
         ) : liveRiddle ? (
-          /* ---------------- LIVE RIDDLE (QUESTION ONLY) ---------------- */
+          /* ---------------- LIVE RIDDLE (OPERATOR-CONTROLLED ANSWER) ---------------- */
           <main
-            key={`riddle-${liveRiddle.number}`}
+            key={`riddle-${liveRiddle.number}-${liveRiddle.showAnswer ? 'a' : 'q'}`}
             className="anim-fade-in mx-auto flex w-full max-w-6xl min-h-0 flex-1 flex-col items-center justify-center px-4 text-center"
           >
             <p className="inline-flex items-center gap-3 rounded-full bg-[#8B5CF6]/20 px-[2vw] py-[0.8vh] text-[2.2vh] font-bold tracking-[0.3em] text-[#C4B5FD] ring-1 ring-[#8B5CF6]/50">
@@ -175,15 +176,24 @@ export default function DisplayScreen() {
             <blockquote className="mt-[2.5vh] text-[clamp(1.6rem,4.2vw,3.8rem)] font-semibold leading-snug">
               {liveRiddle.question}
             </blockquote>
-            <div className="mt-[3vh] flex items-center gap-4" aria-hidden>
-              {[0, 1, 2].map((d) => (
-                <span
-                  key={d}
-                  className="anim-pulse-dot h-[1.6vh] w-[1.6vh] rounded-full bg-[#FFF7ED]/40"
-                  style={{ animationDelay: `${d * 0.25}s` }}
-                />
-              ))}
-            </div>
+            {liveRiddle.showAnswer ? (
+              <div className="anim-pop-in mt-[3vh] rounded-[1.2vw] bg-[#FACC15]/10 px-[4vw] py-[2vh] ring-2 ring-[#FACC15]/60">
+                <p className="text-[1.8vh] tracking-[0.4em] text-[#FACC15]/80">✦ उत्तर ✦</p>
+                <p className="mt-1 text-[clamp(2rem,5.5vw,4.5rem)] font-bold text-[#FACC15] drop-shadow-[0_0_28px_rgba(250,204,21,0.35)]">
+                  {liveRiddle.answer}
+                </p>
+              </div>
+            ) : (
+              <div className="mt-[3vh] flex items-center gap-4" aria-hidden>
+                {[0, 1, 2].map((d) => (
+                  <span
+                    key={d}
+                    className="anim-pulse-dot h-[1.6vh] w-[1.6vh] rounded-full bg-[#FFF7ED]/40"
+                    style={{ animationDelay: `${d * 0.25}s` }}
+                  />
+                ))}
+              </div>
+            )}
           </main>
         ) : !activeFloor ? (
           /* ---------------- WAITING STATE ---------------- */

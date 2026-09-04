@@ -5,7 +5,7 @@ import RiddlePickerDialog from '../components/RiddlePickerDialog';
 import RiddlesPanel from '../components/RiddlesPanel';
 import StatusBadge from '../components/StatusBadge';
 import TimerDisplay from '../components/TimerDisplay';
-import { RIDDLES } from '../lib/riddles';
+import { RIDDLES, firstUnusedIndex } from '../lib/riddles';
 import { useEventStore, useNow } from '../lib/store';
 import { RIDDLE_SHOW_MS, formatElapsed, getBlockElapsed } from '../lib/time';
 import {
@@ -385,9 +385,8 @@ export default function AdminDashboard() {
       {picker && (
         <RiddlePickerDialog
           floorName={config.floorNames[picker.floorId] ?? picker.floorId}
-          defaultIndex={
-            ((event.nextRiddleIndex % RIDDLES.length) + RIDDLES.length) % RIDDLES.length
-          }
+          defaultIndex={firstUnusedIndex(event.usedRiddles, event.nextRiddleIndex)}
+          usedRiddles={event.usedRiddles}
           warning={picker.warning}
           onClose={() => setPicker(null)}
           onConfirm={(riddleIndex) => {

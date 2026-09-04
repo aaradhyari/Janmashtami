@@ -70,10 +70,14 @@ function normalizeEvent(e: EventState): EventState {
     typeof (d as { index?: unknown }).index === 'number' &&
     typeof (d as { showAnswer?: unknown }).showAnswer === 'boolean';
   const cursor = (e as Partial<EventState>).nextRiddleIndex;
+  const usedRaw = (e as Partial<EventState>).usedRiddles;
   return {
     ...e,
     displayRiddle: valid ? (d as { index: number; showAnswer: boolean }) : null,
     nextRiddleIndex: typeof cursor === 'number' ? cursor : 0,
+    usedRiddles: Array.isArray(usedRaw)
+      ? usedRaw.filter((n): n is number => typeof n === 'number')
+      : [],
     floors: e.floors.map((fl) => ({
       ...fl,
       introRiddleIndex:
@@ -116,8 +120,10 @@ interface EventStore {
   resetBlock: (floorId: FloorId, blockId: BlockId) => void;
   resetFloor: (floorId: FloorId) => void;
   resetAll: () => void;
-  showRiddle: (index: number) => void;
+  showRiddle: (index: number, startRevealed?: boolean) => void;
+  revealRiddleAnswer: (show: boolean) => void;
   hideRiddle: () => void;
+  resetRiddleHistory: () => void;
   updateConfig: (patch: Partial<EventConfig>) => void;
 }
 
@@ -270,20 +276,35 @@ export function EventProvider({ children }: { children: ReactNode }) {
   );
 
   const resetAll = useCallback(() => {
-    const fresh = createInitialEvent();
-    publishEvent(fresh);
-    setEvent(fresh);
+    // DONE riddles survive even a full event reset — no reuse, ever.
+    // Use the panel's "reset riddle history" for a brand-new quiz round.
+    setEvent((prev) => {
+      const fresh: EventState = { ...createInitialEvent(), usedRiddles: prev.usedRiddles };
+      publishEvent(fresh);
+      return fresh;
+    });
   }, [publishEvent]);
 
   const showRiddle = useCallback(
-    (index: number) => {
-      mutate((prev) => T.showRiddle(prev, index));
+    (index: number, startRevealed = false) => {
+      mutate((prev) => T.showRiddle(prev, index, startRevealed));
+    },
+    [mutate],
+  );
+
+  const revealRiddleAnswer = useCallback(
+    (show: boolean) => {
+      mutate((prev) => T.revealRiddleAnswer(prev, show));
     },
     [mutate],
   );
 
   const hideRiddle = useCallback(() => {
     mutate((prev) => T.hideRiddle(prev));
+  }, [mutate]);
+
+  const resetRiddleHistory = useCallback(() => {
+    mutate((prev) => T.resetRiddleHistory(prev));
   }, [mutate]);
 
   const updateConfig = useCallback(
@@ -315,7 +336,9 @@ export function EventProvider({ children }: { children: ReactNode }) {
       resetFloor,
       resetAll,
       showRiddle,
+      revealRiddleAnswer,
       hideRiddle,
+      resetRiddleHistory,
       updateConfig,
     }),
     [
@@ -330,7 +353,9 @@ export function EventProvider({ children }: { children: ReactNode }) {
       resetFloor,
       resetAll,
       showRiddle,
+      revealRiddleAnswer,
       hideRiddle,
+      resetRiddleHistory,
       updateConfig,
     ],
   );

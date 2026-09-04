@@ -19,7 +19,10 @@ export function startFloor(
   // and the wall animation all agree on t=0 with no follow-up action.
   const readyAt = now + FLOOR_COUNTDOWN_MS;
   const valid =
-    riddleIndex !== null && riddleIndex >= 0 && riddleIndex < RIDDLES.length
+    riddleIndex !== null &&
+    riddleIndex >= 0 &&
+    riddleIndex < RIDDLES.length &&
+    !prev.usedRiddles.includes(riddleIndex)
       ? riddleIndex
       : null;
   const cursor = typeof prev.nextRiddleIndex === 'number' ? prev.nextRiddleIndex : 0;
@@ -28,6 +31,11 @@ export function startFloor(
     activeFloorId: floorId,
     // Next picker defaults to the riddle after the one just chosen.
     nextRiddleIndex: valid !== null ? valid + 1 : cursor,
+    // A shown riddle is DONE the moment its floor starts — never reused.
+    usedRiddles:
+      valid !== null && !prev.usedRiddles.includes(valid)
+        ? [...prev.usedRiddles, valid]
+        : prev.usedRiddles,
     floors: prev.floors.map((f) =>
       f.id !== floorId
         ? f
@@ -233,10 +241,39 @@ export function resetFloor(prev: EventState, floorId: FloorId): EventState {
 
 /* ---------------- display-wall riddles ---------------- */
 
-/** Push a riddle to the display wall (question hidden-answer first). */
-export function showRiddle(prev: EventState, index: number): EventState {
+/** Push a riddle to the display wall (question first; answers only via reveal). */
+export function showRiddle(
+  prev: EventState,
+  index: number,
+  startRevealed = false,
+): EventState {
   if (index < 0 || index >= RIDDLES.length) return prev;
-  return { ...prev, displayRiddle: { index, showAnswer: false } };
+  // DONE riddles are never reused under any condition.
+  if (prev.usedRiddles.includes(index)) return prev;
+  return {
+    ...prev,
+    displayRiddle: { index, showAnswer: startRevealed },
+    usedRiddles: [...prev.usedRiddles, index],
+  };
+}
+
+/** Reveal or hide the answer of the currently displayed riddle. */
+export function revealRiddleAnswer(prev: EventState, show: boolean): EventState {
+  if (!prev.displayRiddle) return prev;
+  const used = prev.usedRiddles.includes(prev.displayRiddle.index)
+    ? prev.usedRiddles
+    : [...prev.usedRiddles, prev.displayRiddle.index];
+  return {
+    ...prev,
+    displayRiddle: { ...prev.displayRiddle, showAnswer: show },
+    usedRiddles: used,
+  };
+}
+
+/** Clear the DONE history (explicit operator action for a brand-new quiz round). */
+export function resetRiddleHistory(prev: EventState): EventState {
+  if (prev.usedRiddles.length === 0) return prev;
+  return { ...prev, usedRiddles: [] };
 }
 
 /** Remove the riddle — display returns to timers. */

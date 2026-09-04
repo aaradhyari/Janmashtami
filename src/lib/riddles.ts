@@ -1,5 +1,4 @@
 /** 25 Janmashtami riddles (पहेलियाँ) with answers. */
-
 export interface Riddle {
   question: string;
   answer: string;
@@ -132,3 +131,12 @@ export const RIDDLES: Riddle[] = [
     answer: 'वृंदावन',
   },
 ];
+
+/** First riddle index not yet used, scanning forward from `from` (wraps). Null when all are DONE. */
+export function firstUnusedIndex(used: number[], from: number): number | null {
+  for (let step = 0; step < RIDDLES.length; step++) {
+    const i = (((from + step) % RIDDLES.length) + RIDDLES.length) % RIDDLES.length;
+    if (!used.includes(i)) return i;
+  }
+  return null;
+}

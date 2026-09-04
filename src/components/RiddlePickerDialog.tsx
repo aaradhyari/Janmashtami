@@ -9,12 +9,14 @@ import { cn } from '../lib/cn';
 export default function RiddlePickerDialog({
   floorName,
   defaultIndex,
+  usedRiddles,
   warning,
   onConfirm,
   onClose,
 }: {
   floorName: string;
-  defaultIndex: number;
+  defaultIndex: number | null;
+  usedRiddles: number[];
   warning: string | null;
   onConfirm: (riddleIndex: number | null) => void;
   onClose: () => void;
@@ -80,15 +82,20 @@ export default function RiddlePickerDialog({
               </span>
             </button>
           </li>
-          {RIDDLES.map((r, i) => (
+          {RIDDLES.map((r, i) => {
+            const isDone = usedRiddles.includes(i);
+            return (
             <li key={i}>
               <button
+                disabled={isDone}
                 onClick={() => setSelected(i)}
+                title={isDone ? 'Already shown — DONE, cannot reuse' : undefined}
                 className={cn(
                   'flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left ring-1 transition',
                   selected === i
                     ? 'bg-[#8B5CF6]/20 ring-[#8B5CF6]/60'
                     : 'bg-white/[0.04] ring-white/10 hover:bg-white/[0.08]',
+                  isDone && 'cursor-not-allowed opacity-45 hover:bg-white/[0.04]',
                 )}
               >
                 <span
@@ -107,9 +114,15 @@ export default function RiddlePickerDialog({
                     {r.question}
                   </span>
                 </span>
+                {isDone && (
+                  <span className="ml-auto shrink-0 rounded-full bg-[#22C55E]/15 px-2 py-0.5 text-[10px] font-bold tracking-widest text-[#4ADE80] ring-1 ring-[#22C55E]/40">
+                    ✓ DONE
+                  </span>
+                )}
               </button>
             </li>
-          ))}
+            );
+          })}
         </ol>
 
         <div className="flex gap-3 px-6 pb-3">

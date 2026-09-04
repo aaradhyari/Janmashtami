@@ -32,8 +32,10 @@ export interface EventState {
   floors: FloorState[];
   /** Riddle pushed to the display wall. Null = display shows timers. */
   displayRiddle: { index: number; showAnswer: boolean } | null;
-  /** Cursor for the auto-riddle shown at each floor start. Cycles through all riddles. */
+  /** Cursor for the riddle picker default. Advances past the last chosen riddle. */
   nextRiddleIndex: number;
+  /** Riddles already shown on the wall (question or answer). DONE — never reused. */
+  usedRiddles: number[];
   /** Last mutation timestamp — used for sync + recovery ordering. */
   updatedAt: number;
 }
@@ -59,6 +61,7 @@ export function createInitialEvent(now: number = Date.now()): EventState {
     activeFloorId: null,
     displayRiddle: null,
     nextRiddleIndex: 0,
+    usedRiddles: [],
     updatedAt: now,
     floors: FLOOR_IDS.map((id) => ({
       id,
