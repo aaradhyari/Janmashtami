@@ -164,7 +164,8 @@ export default function RiddlesPanel() {
         <p className="mt-4 text-xs leading-relaxed text-[#FFF7ED]/45">
           Pushing a riddle overlays the display wall — running timers keep
           counting in the background and return when you remove the riddle.
-          Starting a floor auto-shows the next riddle during its GET SET GO intro.
+          Starting a floor auto-shows the next riddle after its GET SET GO
+          (question, then answer, then timers).
         </p>
       </section>
     </div>

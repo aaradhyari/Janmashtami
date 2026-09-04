@@ -3,7 +3,12 @@ import FestiveBackground from '../components/FestiveBackground';
 import StatusBadge from '../components/StatusBadge';
 import TimerDisplay from '../components/TimerDisplay';
 import { RIDDLES } from '../lib/riddles';
-import { COUNTDOWN_STEP_MS, FLOOR_COUNTDOWN_MS } from '../lib/time';
+import {
+  COUNTDOWN_STEP_MS,
+  FLOOR_COUNTDOWN_MS,
+  RIDDLE_QUESTION_MS,
+  RIDDLE_SHOW_MS,
+} from '../lib/time';
 import { useEventStore, useNow } from '../lib/store';
 import { getBlockElapsed } from '../lib/time';
 import { finalizedCount, floorStatus } from '../lib/types';
@@ -55,14 +60,15 @@ export default function DisplayScreen() {
         }
       : null;
 
-  // GET SET GO intro: a floor whose GO moment (shared start stamp) is still
-  // in the future. Timers read 00:00 until GO — no separate action needed.
+  // Floor-start sequence: GET SET GO countdown, then the auto-riddle
+  // (question, then answer), then timers. All derived from the GO moment,
+  // so every tab and refresh recovery agrees with no follow-up action.
   const intro = useMemo(() => {
     const fl = event.floors.find(
       (f) =>
         f.sharedStartTimestamp !== null &&
         f.introRiddleIndex !== null &&
-        now < f.sharedStartTimestamp,
+        now < f.sharedStartTimestamp + RIDDLE_SHOW_MS,
     );
     if (!fl || fl.introRiddleIndex === null || fl.sharedStartTimestamp === null)
       return null;
@@ -75,6 +81,10 @@ export default function DisplayScreen() {
     ? now - (intro.floor.sharedStartTimestamp! - FLOOR_COUNTDOWN_MS)
     : 0;
   const phase = introElapsed < COUNTDOWN_STEP_MS ? 0 : introElapsed < COUNTDOWN_STEP_MS * 2 ? 1 : 2;
+  // After GO: 'q' = riddle question, 'a' = question + answer, null = timers.
+  const afterGo = intro ? now - intro.floor.sharedStartTimestamp! : 0;
+  const riddleStage: 'q' | 'a' | null =
+    !intro || afterGo < 0 ? null : afterGo < RIDDLE_QUESTION_MS ? 'q' : 'a';
 
   return (
     <div className="relative flex h-screen w-screen flex-col overflow-hidden bg-[#0F172A] text-[#FFF7ED]">
@@ -94,46 +104,77 @@ export default function DisplayScreen() {
         </header>
 
         {intro ? (
-          /* ---------------- GET SET GO INTRO ---------------- */
-          <main className="anim-fade-in mx-auto flex w-full max-w-6xl min-h-0 flex-1 flex-col items-center justify-center px-4 text-center">
-            <h2 className="anim-card-in text-[4vh] font-bold leading-none tracking-[0.15em]">
-              {config.floorNames[intro.floor.id]}
-            </h2>
-            <div
-              key={phase}
-              className="anim-pop-in mt-[1vh] font-timer text-[clamp(4rem,15vw,12rem)] font-black leading-none tracking-tight"
-              style={
-                phase === 0
-                  ? { color: '#FACC15', textShadow: '0 0 60px rgba(250,204,21,0.5)' }
-                  : phase === 1
-                    ? { color: '#F97316', textShadow: '0 0 60px rgba(249,115,22,0.5)' }
-                    : { color: '#22C55E', textShadow: '0 0 80px rgba(34,197,94,0.65)' }
-              }
+          riddleStage ? (
+            /* ---------------- AUTO-RIDDLE AFTER GO ---------------- */
+            <main
+              key={`auto-${intro.number}-${riddleStage}`}
+              className="anim-fade-in mx-auto flex w-full max-w-6xl min-h-0 flex-1 flex-col items-center justify-center px-4 text-center"
             >
-              {phase === 0 ? 'GET' : phase === 1 ? 'SET' : 'GO!'}
-            </div>
-            <div className="mt-[1.5vh] flex items-center gap-3" aria-hidden>
-              {[0, 1, 2].map((d) => (
-                <span
-                  key={d}
-                  className={cn(
-                    'h-[1.2vh] rounded-full transition-all',
-                    d < phase && 'w-[1.2vh] bg-[#FFF7ED]/30',
-                    d === phase && 'w-[4vw] bg-[#FACC15]',
-                    d > phase && 'w-[1.2vh] bg-[#FFF7ED]/30',
-                  )}
-                />
-              ))}
-            </div>
-            <div className="anim-card-in stagger-2 mt-[2.5vh] w-full rounded-[1.2vw] bg-white/[0.05] px-[3vw] py-[2vh] ring-1 ring-[#8B5CF6]/40">
-              <p className="text-[1.8vh] font-bold tracking-[0.3em] text-[#C4B5FD]">
+              <p className="text-[2vh] font-bold tracking-[0.3em] text-[#FFF7ED]/50">
+                {config.floorNames[intro.floor.id]} · TIMERS RUNNING
+              </p>
+              <p className="mt-[1.5vh] inline-flex items-center gap-3 rounded-full bg-[#8B5CF6]/20 px-[2vw] py-[0.8vh] text-[2.2vh] font-bold tracking-[0.3em] text-[#C4B5FD] ring-1 ring-[#8B5CF6]/50">
                 ❓ पहेली {intro.number} / {RIDDLES.length}
               </p>
-              <p className="mt-[1vh] text-[clamp(1.2rem,2.8vw,2.4rem)] font-medium leading-snug">
+              <blockquote className="mt-[2vh] text-[clamp(1.6rem,4.2vw,3.8rem)] font-semibold leading-snug">
                 {intro.riddle.question}
+              </blockquote>
+              {riddleStage === 'a' ? (
+                <div className="anim-pop-in mt-[2.5vh] rounded-[1.2vw] bg-[#FACC15]/10 px-[4vw] py-[2vh] ring-2 ring-[#FACC15]/60">
+                  <p className="text-[1.8vh] tracking-[0.4em] text-[#FACC15]/80">✦ उत्तर ✦</p>
+                  <p className="mt-1 text-[clamp(2rem,5.5vw,4.5rem)] font-bold text-[#FACC15] drop-shadow-[0_0_28px_rgba(250,204,21,0.35)]">
+                    {intro.riddle.answer}
+                  </p>
+                </div>
+              ) : (
+                <div className="mt-[2.5vh] flex items-center gap-4" aria-hidden>
+                  {[0, 1, 2].map((d) => (
+                    <span
+                      key={d}
+                      className="anim-pulse-dot h-[1.6vh] w-[1.6vh] rounded-full bg-[#FFF7ED]/40"
+                      style={{ animationDelay: `${d * 0.25}s` }}
+                    />
+                  ))}
+                </div>
+              )}
+            </main>
+          ) : (
+            /* ---------------- GET SET GO ---------------- */
+            <main className="anim-fade-in mx-auto flex w-full max-w-6xl min-h-0 flex-1 flex-col items-center justify-center px-4 text-center">
+              <h2 className="anim-card-in text-[4vh] font-bold leading-none tracking-[0.15em]">
+                {config.floorNames[intro.floor.id]}
+              </h2>
+              <p className="mt-[1vh] text-[2vh] tracking-[0.4em] text-[#FFF7ED]/50">
+                GET READY
               </p>
-            </div>
-          </main>
+              <div
+                key={phase}
+                className="anim-pop-in mt-[1vh] font-timer text-[clamp(4rem,15vw,12rem)] font-black leading-none tracking-tight"
+                style={
+                  phase === 0
+                    ? { color: '#FACC15', textShadow: '0 0 60px rgba(250,204,21,0.5)' }
+                    : phase === 1
+                      ? { color: '#F97316', textShadow: '0 0 60px rgba(249,115,22,0.5)' }
+                      : { color: '#22C55E', textShadow: '0 0 80px rgba(34,197,94,0.65)' }
+                }
+              >
+                {phase === 0 ? 'GET' : phase === 1 ? 'SET' : 'GO!'}
+              </div>
+              <div className="mt-[1.5vh] flex items-center gap-3" aria-hidden>
+                {[0, 1, 2].map((d) => (
+                  <span
+                    key={d}
+                    className={cn(
+                      'h-[1.2vh] rounded-full transition-all',
+                      d < phase && 'w-[1.2vh] bg-[#FFF7ED]/30',
+                      d === phase && 'w-[4vw] bg-[#FACC15]',
+                      d > phase && 'w-[1.2vh] bg-[#FFF7ED]/30',
+                    )}
+                  />
+                ))}
+              </div>
+            </main>
+          )
         ) : liveRiddle ? (
           /* ---------------- LIVE RIDDLE ---------------- */
           <main

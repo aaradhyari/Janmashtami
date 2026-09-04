@@ -6,7 +6,7 @@ import StatusBadge from '../components/StatusBadge';
 import TimerDisplay from '../components/TimerDisplay';
 import { RIDDLES } from '../lib/riddles';
 import { useEventStore, useNow } from '../lib/store';
-import { formatElapsed, getBlockElapsed } from '../lib/time';
+import { RIDDLE_SHOW_MS, formatElapsed, getBlockElapsed } from '../lib/time';
 import {
   FLOOR_INDEX,
   finalizedCount,
@@ -279,6 +279,12 @@ export default function AdminDashboard() {
                           now < floor.sharedStartTimestamp ? (
                             <span className="font-bold text-[#FACC15]">
                               ● GET SET GO…
+                            </span>
+                          ) : floor.sharedStartTimestamp !== null &&
+                            floor.introRiddleIndex !== null &&
+                            now < floor.sharedStartTimestamp + RIDDLE_SHOW_MS ? (
+                            <span className="font-bold text-[#C4B5FD]">
+                              ● ❓ RIDDLE…
                             </span>
                           ) : isActive ? (
                             '● LIVE NOW'
